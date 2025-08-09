@@ -5,7 +5,7 @@ const User=require("./models/user");
 
 app.use(express.json());
 
-app.post("/signup", async(req,res)=>{
+app.post("/user", async(req,res)=>{
 
 
     const user=new User(req.body);
@@ -76,7 +76,7 @@ app.patch("/user",async(req,res)=>{
     console.log(userId);
 
     try{
-        await User.findByIdAndUpdate(userId,req.body);
+        await User.findByIdAndUpdate(userId,req.body,{runValidators: true});
         res.send("User updated successfully...");
     }
     catch(err){
