@@ -1,4 +1,5 @@
 const mongoose=require("mongoose");
+const validator=require("validator");
 
 const userSchema=mongoose.Schema({
     firstName:{
@@ -20,6 +21,11 @@ const userSchema=mongoose.Schema({
         lowercase:true,
         minlength:8,
         maxlength:20,
+        validate(value){
+            if(!validator.isEmail(value)){
+                throw new Error("Invalid email address "+ value);
+            }
+        }
     },
     password:{
         type:String,
@@ -27,6 +33,11 @@ const userSchema=mongoose.Schema({
         trim:true,
         minlength:4,
         maxlength:20,
+        validate(value){
+            if(!validator.isStrongPassword(value)){
+                throw new Error("Enter a strong password " + value);
+            }
+        }
     },
     age:{
         type:Number,
@@ -43,7 +54,11 @@ const userSchema=mongoose.Schema({
     photourl:{
         type:String,
         default:"https://bbdu.ac.in/tpocontacts/dummy-image1/",
-        
+        validate(value){
+            if(!validator.isURL(value)){
+                throw new Error("Invalid photo URL " + value);
+            }
+        }
     },
     about:{
         type:String,

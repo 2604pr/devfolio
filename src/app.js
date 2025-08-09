@@ -16,7 +16,7 @@ app.post("/user", async(req,res)=>{
         res.send("User added...");
     }
     catch(err){
-        res.status(400).send("Error occured:", err.message);
+        res.status(400).json({ error: err.message });
     }   
 
 })
@@ -70,17 +70,30 @@ app.delete("/user", async(req,res)=>{
 })
 
 
-app.patch("/user",async(req,res)=>{
+app.patch("/user/:userId",async(req,res)=>{
 
-    const userId=req.body.userId;
+    const userId=req.params?.userId;
     console.log(userId);
 
     try{
+        const ALLOWED_UPDATES=["photourl","skills","about"];
+        const isUpdateAllowed=Object.keys(req.body).every((k)=>
+            ALLOWED_UPDATES.includes(k)
+        )
+
+        if(!isUpdateAllowed){
+            throw new error("Update not allowed");
+        }
+
+        if(Array.isArray(req.body?.skills) && req.body.skills.length > 10){
+            throw new Error("Update not allowed, reduce length in skills");
+        }
+
         await User.findByIdAndUpdate(userId,req.body,{runValidators: true});
         res.send("User updated successfully...");
     }
     catch(err){
-        res.status(400).send("Something went wrong"+err.message);
+        res.status(400).send("Something went wrong " + err.message);
     }
 })
 
