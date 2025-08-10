@@ -1,5 +1,7 @@
 const mongoose=require("mongoose");
 const validator=require("validator");
+const jwt=require("jsonwebtoken");
+const bcrypt=require("bcrypt");
 
 const userSchema=mongoose.Schema({
     firstName:{
@@ -20,7 +22,7 @@ const userSchema=mongoose.Schema({
         trim:true,
         lowercase:true,
         minlength:8,
-        maxlength:20,
+        maxlength:30,
         validate(value){
             if(!validator.isEmail(value)){
                 throw new Error("Invalid email address "+ value);
@@ -32,7 +34,6 @@ const userSchema=mongoose.Schema({
         required:true,
         trim:true,
         minlength:4,
-        maxlength:20,
         validate(value){
             if(!validator.isStrongPassword(value)){
                 throw new Error("Enter a strong password " + value);
@@ -70,6 +71,24 @@ const userSchema=mongoose.Schema({
 },
 {timestamps:true});
 
+userSchema.methods.getJWT=async function () {
+    const user=this;
+
+    const token=await jwt.sign({_id:user._id},"Pranshu@123456qwer",{
+        expiresIn:"7d"
+    });
+
+    return token;
+}
+
+userSchema.methods.validatePassword=async function (passwordInputByUser) {
+    const user=this;
+    const hashPassword=user.password;
+
+    const validPass=await bcrypt.compare(passwordInputByUser,hashPassword);   
+
+    return validPass;
+}
 
 const userModel=mongoose.model("User",userSchema);
 

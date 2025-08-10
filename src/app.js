@@ -2,15 +2,39 @@ const express=require("express");
 const connectDB=require("./config/database");
 const app=express();
 const User=require("./models/user");
+const {validateSignupdata}=require("./utils/validate");
+const bcrypt=require("bcrypt");
+const cookieParser=require("cookie-parser");
+const jwt=require("jsonwebtoken");
+const userAuth=require("./middlewares/auth");
 
 app.use(express.json());
+app.use(cookieParser());
 
-app.post("/user", async(req,res)=>{
-
-
-    const user=new User(req.body);
+app.post("/signup", async(req,res)=>{
 
     try{
+
+        validateSignupdata(req);
+
+        const{firstName,lastName,emailID,password}=req.body;
+
+        const duplicate=await User.findOne({ emailID });
+        
+        if(duplicate){
+            res.status(400).send("Email already exists, try a different one");
+        }
+
+        const passwordHash=await bcrypt.hash(password,10);
+        console.log(passwordHash);
+
+        const user=new User({
+            firstName,
+            lastName,
+            emailID,
+            password:passwordHash
+        })
+
         await user.save();
 
         res.send("User added...");
@@ -19,6 +43,60 @@ app.post("/user", async(req,res)=>{
         res.status(400).json({ error: err.message });
     }   
 
+})
+
+app.post("/login",async(req,res)=>{
+
+
+    try{
+        const {emailID,password}=req.body;
+
+        const emailExists=await User.findOne({emailID:emailID});
+
+        if(!emailExists){
+            throw new Error("This email does not exist, please Signup first...");
+        }
+
+        const validPass=await emailExists.validatePassword(password);
+
+        if(validPass){
+            const token=jwt.sign({_id:emailExists._id.toString()},"Pranshu@123456qwer",{
+                expiresIn:"7d"
+            })
+            console.log(token);
+            res.cookie("token",token,{
+                expires:new Date(Date.now()+8*3600000)
+            })
+            res.send("Login successful");
+        }
+        else{
+            throw new Error("Login unsuccessful, check credentials")
+        }
+
+    }
+    catch(err){
+        res.status(400).send("Error occured "+ err.message);
+    }
+});
+
+app.get("/profile",userAuth,async(req,res)=>{
+    try{
+        const user=req.user;
+        res.send(user);
+
+    }
+    catch(err){
+        res.status(400).send("Error occured "+ err.message);
+    }
+});
+
+app.post("/sendconnectionRequest", userAuth, async(req,res)=>{
+
+    const user=req.user;
+    if(!user){
+        res.send("Invalid credentials, check again")
+    }
+    res.send(user.firstName +" sent a connection request...")
 })
 
 app.get("/user", async(req,res)=>{
