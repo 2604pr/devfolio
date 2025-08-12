@@ -1,0 +1,34 @@
+const express=require("express");
+const profileRouter=express.Router();
+const userAuth=require("../middlewares/auth");
+const {validateEditProfileData}=require("../utils/validate");
+
+profileRouter.get("/profile/view",userAuth,async(req,res)=>{
+    try{
+        const user=req.user;
+        res.send(user);
+
+    }
+    catch(err){
+        res.status(400).send("Error occured "+ err.message);
+    }
+});
+
+profileRouter.patch("/profile/edit",userAuth,async(req,res)=>{
+    try{
+        if(!validateEditProfileData){
+            throw new Error("Not a valid profile")
+        }
+
+        const loggedInUser=req.user;
+        await loggedInUser.save();
+
+        Object.keys(req.body).forEach((key)=>loggedInUser[key]=req.body[key]);
+        res.send("Profile updated successfully..");
+    }
+    catch(err){
+        res.status(400).send("Error occured "+err.message);
+    }
+})
+
+module.exports=profileRouter;
