@@ -21,10 +21,12 @@ profileRouter.patch("/profile/edit",userAuth,async(req,res)=>{
         }
 
         const loggedInUser=req.user;
-        await loggedInUser.save();
 
         Object.keys(req.body).forEach((key)=>loggedInUser[key]=req.body[key]);
+
+        await loggedInUser.save();
         res.send("Profile updated successfully..");
+
     }
     catch(err){
         res.status(400).send("Error occured "+err.message);
