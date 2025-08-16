@@ -3,6 +3,8 @@ const requestRouter=express.Router();
 const userAuth=require("../middlewares/auth");
 const connectionRequest=require("../models/connectionRequest");
 const user=require("../models/user");
+const mongoose=require("mongoose");
+
 
 requestRouter.post("/request/send/:status/:toUserId", userAuth, async(req,res)=>{
 
@@ -54,6 +56,56 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async(req,res)=>
         res.status(400).send("Error occured " + err.message);
     }
     
+})
+
+requestRouter.post("/request/review/:status/:requestId", userAuth, async(req,res)=>{
+
+    try{
+        const {status, requestId}=req.params;
+        const loggedInUser=req.user;  
+
+        const allowedStatus=["accepted", "rejected"];
+        if(!allowedStatus.includes(status)){
+            return res.status(400).json({message:"Not a valid status "});
+        }
+
+        console.log("loggedInUser._id (raw):", loggedInUser._id);
+        console.log("typeof loggedInUser._id:", typeof loggedInUser._id);
+        console.log("String(loggedInUser._id):", String(loggedInUser._id));
+
+        const connectionReq=await connectionRequest.findOne({
+            _id:requestId,
+            status:"interested",
+            toUserId:String(loggedInUser._id),
+            
+        });
+
+        // const connectionReq = await connectionRequest.findOne({
+        // _id: requestId,
+        // status: "interested",
+        // $or: [
+        //     { toUserId: loggedInUser._id },
+        //     { fromUserId: loggedInUser._id }
+        // ]
+        // });
+
+        
+        console.log("Found request:", connectionReq);
+
+        if(!connectionReq){
+            return res.status(400).json("Not a valid connection request ");
+        }
+        
+        connectionReq.status=status;
+
+        const data=await connectionReq.save();
+
+        res.json({message:"Connection request " +status ,data});
+    }
+
+    catch(err){
+        res.status(400).send("error occured "+ err.message);
+    }
 })
 
 module.exports=requestRouter;
