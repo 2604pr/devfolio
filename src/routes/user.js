@@ -2,6 +2,8 @@ const express=require("express");
 const userRouter=express.Router();
 const userAuth=require("../middlewares/auth");
 const connectionRequest=require("../models/connectionRequest");
+const User=require("../models/user");
+
 
 const requiredData="firstName lastName about age skills";
 
@@ -42,6 +44,41 @@ userRouter.get("/user/connections", userAuth, async(req,res)=>{
 
         res.json({message:"Connections available are: ",data});
 
+    }
+    catch(err){
+        res.status(400).send("Error occured "+ err.message);
+    }
+})
+
+userRouter.get("/feed", userAuth, async(req,res)=>{
+    try{
+        const loggedInUser=req.user;
+
+        const page = parseInt(req.query.page) || 1;
+        let limit = parseInt(req.query.limit) || 10;
+        limit =  limit>50 ? 50:limit;
+        const skip=(page-1)*limit;
+
+        const totalConnectionRequests=await connectionRequest.find({
+            $or:[{fromUserId:loggedInUser._id},
+                {toUserId:loggedInUser._id}
+            ]
+        }).select("fromUserId toUserId");
+
+        const hideUsersFromFedd=new Set();
+
+        totalConnectionRequests.forEach((req)=>{
+            hideUsersFromFedd.add(req.fromUserId.toString());
+            hideUsersFromFedd.add(req.toUserId.toString());
+        })
+
+        const users=await User.find({
+            $and:[
+                {_id:{ $nin: Array.from(hideUsersFromFedd) }},
+                {_id:{ $ne: loggedInUser._id}}
+        ]}).select(requiredData).skip(skip).limit(limit);
+
+        res.json({users});
     }
     catch(err){
         res.status(400).send("Error occured "+ err.message);

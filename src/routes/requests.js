@@ -42,8 +42,6 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async(req,res)=>
             status,
         });
 
-        console.log(request);
-
         const data=await request.save();
 
         res.json({
@@ -69,10 +67,6 @@ requestRouter.post("/request/review/:status/:requestId", userAuth, async(req,res
             return res.status(400).json({message:"Not a valid status "});
         }
 
-        console.log("loggedInUser._id (raw):", loggedInUser._id);
-        console.log("typeof loggedInUser._id:", typeof loggedInUser._id);
-        console.log("String(loggedInUser._id):", String(loggedInUser._id));
-
         const connectionReq=await connectionRequest.findOne({
             _id:requestId,
             status:"interested",
@@ -80,16 +74,6 @@ requestRouter.post("/request/review/:status/:requestId", userAuth, async(req,res
             
         });
 
-        // const connectionReq = await connectionRequest.findOne({
-        // _id: requestId,
-        // status: "interested",
-        // $or: [
-        //     { toUserId: loggedInUser._id },
-        //     { fromUserId: loggedInUser._id }
-        // ]
-        // });
-
-        
         console.log("Found request:", connectionReq);
 
         if(!connectionReq){
